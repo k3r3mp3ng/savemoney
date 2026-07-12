@@ -1,37 +1,11 @@
 // ==================== APP STATE ====================
 const APP = {
-    googleSheetUrl: localStorage.getItem('gsUrl') || '',
+    googleSheetUrl: 'https://script.google.com/macros/s/AKfycbyWRr90xGzGsNi8Xm26KZKy6dpAs4LzE6b084DdyId90rXg8LpXOwglipi2B3uL2VO1/exec', // GANTI DENGAN URL DEPLOYMENT KAMU
     transactions: JSON.parse(localStorage.getItem('txData') || '[]'),
     goals: JSON.parse(localStorage.getItem('goalData') || '[]'),
     currentUser: localStorage.getItem('currentUser') || 'SUGIANTO',
     currentPage: 'dashboard',
 };
-
-// Default sample data with user field
-function initSampleData() {
-    if (APP.transactions.length === 0) {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = now.getMonth();
-        APP.transactions = [
-            { id: 'tx1', date: `${y}-${String(m+1).padStart(2,'0')}-05`, type: 'Income', category: 'Gaji', amount: 8000000, desc: 'Gaji bulanan', user: 'SUGIANTO' },
-            { id: 'tx2', date: `${y}-${String(m+1).padStart(2,'0')}-08`, type: 'Expense', category: 'Makanan', amount: 450000, desc: 'Makan siang & ngopi', user: 'SUGIANTO' },
-            { id: 'tx3', date: `${y}-${String(m+1).padStart(2,'0')}-10`, type: 'Expense', category: 'Transport', amount: 300000, desc: 'Bensin & parkir', user: 'SUGIANTO' },
-            { id: 'tx4', date: `${y}-${String(m+1).padStart(2,'0')}-12`, type: 'Expense', category: 'Tagihan', amount: 1200000, desc: 'Listrik & internet', user: 'NOVI MUTIARA' },
-            { id: 'tx5', date: `${y}-${String(m+1).padStart(2,'0')}-15`, type: 'Expense', category: 'Belanja', amount: 750000, desc: 'Belanja bulanan', user: 'NOVI MUTIARA' },
-            { id: 'tx6', date: `${y}-${String(m-1).padStart(2,'0')}-28`, type: 'Income', category: 'Freelance', amount: 2500000, desc: 'Project sampingan', user: 'NOVI MUTIARA' },
-        ];
-        saveLocal();
-    }
-    if (APP.goals.length === 0) {
-        const nextYear = new Date().getFullYear() + 1;
-        APP.goals = [
-            { id: 'g1', name: 'Liburan Bali', target: 15000000, current: 4500000, deadline: `${nextYear}-06-30`, icon: '🏖️' },
-            { id: 'g2', name: 'Dana Darurat', target: 20000000, current: 8000000, deadline: `${nextYear}-12-31`, icon: '🛡️' },
-        ];
-        saveLocal();
-    }
-}
 
 function saveLocal() {
     localStorage.setItem('txData', JSON.stringify(APP.transactions));
@@ -130,7 +104,7 @@ function getCurrentMonth() {
     return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 }
 
-// ==================== DASHBOARD (filtered by currentUser) ====================
+// ==================== DASHBOARD ====================
 function refreshDashboard() {
     const currentMonth = getCurrentMonth();
     const userTx = APP.transactions.filter(t => t.user === APP.currentUser);
@@ -196,7 +170,7 @@ function renderChart() {
         </div>`);
 }
 
-// ==================== TRANSACTIONS (filter by user) ====================
+// ==================== TRANSACTIONS ====================
 function populateFilterMonths() {
     const monthsSet = new Set();
     APP.transactions.filter(t => t.user === APP.currentUser).forEach(t => {
@@ -283,7 +257,7 @@ function deleteTransaction(id) {
     showToast('🗑️ Transaksi dihapus!');
 }
 
-// ==================== GOALS (global, tidak terpisah user) ====================
+// ==================== GOALS ====================
 function renderGoals() {
     const grid = document.getElementById('goalsGrid');
     if (APP.goals.length === 0) {
@@ -491,14 +465,15 @@ function exportToCSV() {
 
 // ==================== INIT ====================
 function init() {
-    APP.googleSheetUrl = 'https://script.google.com/macros/s/AKfycbyWRr90xGzGsNi8Xm26KZKy6dpAs4LzE6b084DdyId90rXg8LpXOwglipi2B3uL2VO1/exec';
+    // URL sudah di-hardcode di atas, langsung pakai
+    // APP.googleSheetUrl tidak perlu diambil dari localStorage lagi
+    // Kecuali kamu masih ingin fallback, bisa dipertahankan, tapi untuk hardcode biarkan seperti di atas.
+
     const txData = localStorage.getItem('txData');
     const goalData = localStorage.getItem('goalData');
     if (txData) APP.transactions = JSON.parse(txData);
     if (goalData) APP.goals = JSON.parse(goalData);
-    if (!txData && !goalData) initSampleData();
-    else if (!txData && goalData) initSampleData();
-    saveLocal();
+    // TIDAK ADA INISIALISASI SAMPLE DATA
 
     document.getElementById('userSelect').value = APP.currentUser;
 
@@ -519,7 +494,7 @@ function init() {
         syncFromSheets().catch(() => {});
     }
 
-    console.log('🚀 Tabungan kita siap!');
+    console.log('🚀 FinansialKu Multi-User siap! (tanpa sample data)');
 }
 
 document.addEventListener('DOMContentLoaded', init);
