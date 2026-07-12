@@ -3,22 +3,23 @@ const APP = {
     googleSheetUrl: localStorage.getItem('gsUrl') || '',
     transactions: JSON.parse(localStorage.getItem('txData') || '[]'),
     goals: JSON.parse(localStorage.getItem('goalData') || '[]'),
+    currentUser: localStorage.getItem('currentUser') || 'SUGIANTO',
     currentPage: 'dashboard',
 };
 
-// Default sample data if empty
+// Default sample data with user field
 function initSampleData() {
     if (APP.transactions.length === 0) {
         const now = new Date();
         const y = now.getFullYear();
         const m = now.getMonth();
         APP.transactions = [
-            { id: 'tx1', date: `${y}-${String(m+1).padStart(2,'0')}-05`, type: 'Income', category: 'Gaji', amount: 8000000, desc: 'Gaji bulanan' },
-            { id: 'tx2', date: `${y}-${String(m+1).padStart(2,'0')}-08`, type: 'Expense', category: 'Makanan', amount: 450000, desc: 'Makan siang & ngopi' },
-            { id: 'tx3', date: `${y}-${String(m+1).padStart(2,'0')}-10`, type: 'Expense', category: 'Transport', amount: 300000, desc: 'Bensin & parkir' },
-            { id: 'tx4', date: `${y}-${String(m+1).padStart(2,'0')}-12`, type: 'Expense', category: 'Tagihan', amount: 1200000, desc: 'Listrik & internet' },
-            { id: 'tx5', date: `${y}-${String(m+1).padStart(2,'0')}-15`, type: 'Expense', category: 'Belanja', amount: 750000, desc: 'Belanja bulanan' },
-            { id: 'tx6', date: `${y}-${String(m-1).padStart(2,'0')}-28`, type: 'Income', category: 'Freelance', amount: 2500000, desc: 'Project sampingan' },
+            { id: 'tx1', date: `${y}-${String(m+1).padStart(2,'0')}-05`, type: 'Income', category: 'Gaji', amount: 8000000, desc: 'Gaji bulanan', user: 'SUGIANTO' },
+            { id: 'tx2', date: `${y}-${String(m+1).padStart(2,'0')}-08`, type: 'Expense', category: 'Makanan', amount: 450000, desc: 'Makan siang & ngopi', user: 'SUGIANTO' },
+            { id: 'tx3', date: `${y}-${String(m+1).padStart(2,'0')}-10`, type: 'Expense', category: 'Transport', amount: 300000, desc: 'Bensin & parkir', user: 'SUGIANTO' },
+            { id: 'tx4', date: `${y}-${String(m+1).padStart(2,'0')}-12`, type: 'Expense', category: 'Tagihan', amount: 1200000, desc: 'Listrik & internet', user: 'NOVI MUTIARA' },
+            { id: 'tx5', date: `${y}-${String(m+1).padStart(2,'0')}-15`, type: 'Expense', category: 'Belanja', amount: 750000, desc: 'Belanja bulanan', user: 'NOVI MUTIARA' },
+            { id: 'tx6', date: `${y}-${String(m-1).padStart(2,'0')}-28`, type: 'Income', category: 'Freelance', amount: 2500000, desc: 'Project sampingan', user: 'NOVI MUTIARA' },
         ];
         saveLocal();
     }
@@ -35,10 +36,22 @@ function initSampleData() {
 function saveLocal() {
     localStorage.setItem('txData', JSON.stringify(APP.transactions));
     localStorage.setItem('goalData', JSON.stringify(APP.goals));
+    localStorage.setItem('currentUser', APP.currentUser);
 }
 
 function generateId() {
     return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+}
+
+// ==================== USER SWITCH ====================
+function switchUser() {
+    const select = document.getElementById('userSelect');
+    APP.currentUser = select.value;
+    saveLocal();
+    refreshDashboard();
+    populateFilterMonths();
+    renderTransactions();
+    renderGoals();
 }
 
 // ==================== NAVIGATION ====================
@@ -50,12 +63,10 @@ function navigateTo(page) {
     if (pageEl) pageEl.classList.add('active');
     const navLink = document.querySelector(`.sidebar nav a[data-page="${page}"]`);
     if (navLink) navLink.classList.add('active');
-    // Close sidebar on mobile
     if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebarOverlay').classList.remove('show');
     }
-    // Refresh page content
     if (page === 'dashboard') refreshDashboard();
     if (page === 'transactions') { populateFilterMonths(); renderTransactions(); }
     if (page === 'goals') renderGoals();
@@ -65,17 +76,11 @@ function navigateTo(page) {
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
-    const isOpen = sidebar.classList.contains('open');
-    if (isOpen) {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('show');
-    } else {
-        sidebar.classList.add('open');
-        overlay.classList.add('show');
-    }
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
 }
 
-// ==================== TOAST ====================
+// ==================== TOAST & CONFETTI ====================
 function showToast(msg, type = 'success') {
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
@@ -89,7 +94,6 @@ function showToast(msg, type = 'success') {
     }, 2800);
 }
 
-// ==================== CONFETTI ====================
 function triggerConfetti() {
     const colors = ['#f43f5e', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6'];
     for (let i = 0; i < 60; i++) {
@@ -126,21 +130,21 @@ function getCurrentMonth() {
     return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 }
 
-// ==================== DASHBOARD ====================
+// ==================== DASHBOARD (filtered by currentUser) ====================
 function refreshDashboard() {
     const currentMonth = getCurrentMonth();
-    const monthTx = APP.transactions.filter(t => t.date.startsWith(currentMonth));
+    const userTx = APP.transactions.filter(t => t.user === APP.currentUser);
+    const monthTx = userTx.filter(t => t.date.startsWith(currentMonth));
     const totalIncome = monthTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
     const totalExpense = monthTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
-    const allIncome = APP.transactions.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
-    const allExpense = APP.transactions.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
+    const allIncome = userTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
+    const allExpense = userTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
     const balance = allIncome - allExpense;
 
     document.getElementById('dashBalance').textContent = formatRupiah(balance);
     document.getElementById('dashIncome').textContent = formatRupiah(totalIncome);
     document.getElementById('dashExpense').textContent = formatRupiah(totalExpense);
 
-    // Holiday goal progress (first goal or holiday-related)
     const holidayGoal = APP.goals.find(g => g.name.toLowerCase().includes('libur') || g.name.toLowerCase().includes('holiday') || g.icon === '🏖️') || APP.goals[0];
     if (holidayGoal) {
         const pct = Math.min(100, Math.round((holidayGoal.current / holidayGoal.target) * 100));
@@ -150,7 +154,6 @@ function refreshDashboard() {
         document.getElementById('dashGoalProgress').textContent = '0%';
         document.getElementById('dashGoalSub').textContent = 'Belum ada target';
     }
-    // Render chart
     renderChart();
 }
 
@@ -162,8 +165,9 @@ function renderChart() {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
     }
+    const userTx = APP.transactions.filter(t => t.user === APP.currentUser);
     const data = months.map(m => {
-        const tx = APP.transactions.filter(t => t.date.startsWith(m));
+        const tx = userTx.filter(t => t.date.startsWith(m));
         return {
             month: m,
             income: tx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0),
@@ -186,17 +190,18 @@ function renderChart() {
             <span style="font-size:0.7rem;color:#64748b;font-weight:600;">${monthLabels[mIndex]}</span>
         </div>`;
     }).join('');
-    // Legend
     container.insertAdjacentHTML('beforeend', `
         <div style="display:flex;gap:16px;align-items:center;margin-left:12px;font-size:0.78rem;">
             <span>🟢 Pemasukan</span><span>🔴 Pengeluaran</span>
         </div>`);
 }
 
-// ==================== TRANSACTIONS ====================
+// ==================== TRANSACTIONS (filter by user) ====================
 function populateFilterMonths() {
     const monthsSet = new Set();
-    APP.transactions.forEach(t => { if (t.date && t.date.length >= 7) monthsSet.add(t.date.substring(0, 7)); });
+    APP.transactions.filter(t => t.user === APP.currentUser).forEach(t => {
+        if (t.date && t.date.length >= 7) monthsSet.add(t.date.substring(0, 7));
+    });
     const select = document.getElementById('filterMonth');
     const currentVal = select.value;
     select.innerHTML = '<option value="all">Semua Bulan</option>';
@@ -211,14 +216,14 @@ function populateFilterMonths() {
 function renderTransactions() {
     const filterMonth = document.getElementById('filterMonth').value;
     const filterType = document.getElementById('filterType').value;
-    let filtered = [...APP.transactions];
+    let filtered = APP.transactions.filter(t => t.user === APP.currentUser);
     if (filterMonth !== 'all') filtered = filtered.filter(t => t.date.startsWith(filterMonth));
     if (filterType !== 'all') filtered = filtered.filter(t => t.type === filterType);
     filtered.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 
     const tbody = document.getElementById('txTableBody');
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-icon">📭</div>Tidak ada transaksi</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-icon">📭</div>Tidak ada transaksi untuk user ini</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map(t => `
@@ -254,6 +259,7 @@ function addTransaction() {
         category: finalCategory,
         amount,
         desc: desc || (type === 'Income' ? 'Pemasukan' : 'Pengeluaran'),
+        user: APP.currentUser
     };
     APP.transactions.push(tx);
     saveLocal();
@@ -277,7 +283,7 @@ function deleteTransaction(id) {
     showToast('🗑️ Transaksi dihapus!');
 }
 
-// ==================== GOALS ====================
+// ==================== GOALS (global, tidak terpisah user) ====================
 function renderGoals() {
     const grid = document.getElementById('goalsGrid');
     if (APP.goals.length === 0) {
@@ -351,7 +357,7 @@ function addGoalFunds(goalId) {
         showToast('🎉🎉 Target TERCAPAI! Selamat! 🎉🎉');
         triggerConfetti();
     } else {
-        showToast(`✅ Dana ditambahkan ke "${goal.name}"!`);
+        showToast(`✅ Dana ditambahkan ke "${goal.name}"! (oleh ${APP.currentUser})`);
     }
 }
 
@@ -395,7 +401,12 @@ async function syncFromSheets() {
         const resp = await fetch(url + '?action=getAll', { method: 'GET' });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
-        if (data.transactions) APP.transactions = data.transactions;
+        if (data.transactions) {
+            APP.transactions = data.transactions.map(t => ({
+                ...t,
+                user: t.user || 'SUGIANTO'  // fallback untuk data lama
+            }));
+        }
         if (data.goals) APP.goals = data.goals;
         saveLocal();
         populateFilterMonths();
@@ -460,9 +471,9 @@ function saveSettings() {
 }
 
 function exportToCSV() {
-    let csv = 'Tanggal,Tipe,Kategori,Deskripsi,Jumlah\n';
+    let csv = 'Tanggal,Tipe,Kategori,Deskripsi,Jumlah,User\n';
     APP.transactions.sort((a,b) => b.date.localeCompare(a.date)).forEach(t => {
-        csv += `${t.date},${t.type},${t.category},"${t.desc||''}",${t.type==='Income'?'':'-'}${t.amount}\n`;
+        csv += `${t.date},${t.type},${t.category},"${t.desc||''}",${t.type==='Income'?'':'-'}${t.amount},${t.user}\n`;
     });
     csv += '\n\nTarget Tabungan\nNama,Target,Terkumpul,Deadline,Ikon\n';
     APP.goals.forEach(g => {
@@ -489,6 +500,8 @@ function init() {
     else if (!txData && goalData) initSampleData();
     saveLocal();
 
+    document.getElementById('userSelect').value = APP.currentUser;
+
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('txDate').value = today;
     if (document.getElementById('goalDeadline')) {
@@ -506,21 +519,16 @@ function init() {
         syncFromSheets().catch(() => {});
     }
 
-    console.log('🚀 FinansialKu siap!');
-    console.log('📊 Transaksi:', APP.transactions.length, 'item');
-    console.log('🎯 Goals:', APP.goals.length, 'target');
-    console.log('🔗 Sheets:', APP.googleSheetUrl ? 'Configured' : 'Local only');
+    console.log('🚀 Tabungan kita siap!');
 }
 
 document.addEventListener('DOMContentLoaded', init);
-
 window.addEventListener('resize', () => {
     if (window.innerWidth > 768) {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebarOverlay').classList.remove('show');
     }
 });
-
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
