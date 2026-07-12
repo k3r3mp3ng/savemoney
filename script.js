@@ -1,9 +1,9 @@
 // ==================== APP STATE ====================
 const APP = {
-    googleSheetUrl: 'https://script.google.com/macros/s/AKfycbyWRr90xGzGsNi8Xm26KZKy6dpAs4LzE6b084DdyId90rXg8LpXOwglipi2B3uL2VO1/exec', // GANTI DENGAN URL DEPLOYMENT KAMU
+    googleSheetUrl: 'https://script.google.com/macros/s/AKfycbyWRr90xGzGsNi8Xm26KZKy6dpAs4LzE6b084DdyId90rXg8LpXOwglipi2B3uL2VO1/exec',
     transactions: JSON.parse(localStorage.getItem('txData') || '[]'),
     goals: JSON.parse(localStorage.getItem('goalData') || '[]'),
-    currentUser: localStorage.getItem('currentUser') || 'Sugi',
+    currentUser: localStorage.getItem('currentUser') || 'SUGIANTO',
     currentPage: 'dashboard',
 };
 
@@ -355,7 +355,6 @@ async function syncToSheets() {
             transactions: JSON.stringify(APP.transactions),
             goals: JSON.stringify(APP.goals),
         };
-        // Jangan pakai no-cors agar bisa membaca response
         const resp = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -381,11 +380,10 @@ async function syncFromSheets() {
         const data = await resp.json();
         console.log('📥 Data dari Sheets:', data);
 
-        // Pastikan data.transactions adalah array
         if (Array.isArray(data.transactions)) {
             APP.transactions = data.transactions.map(t => ({
                 ...t,
-                user: t.user || 'SUGIANTO'  // fallback untuk data lama
+                user: t.user || 'SUGIANTO'  // fallback
             }));
         }
         if (Array.isArray(data.goals)) {
@@ -404,7 +402,6 @@ async function syncFromSheets() {
     }
 }
 
-
 async function testConnection() {
     const url = APP.googleSheetUrl;
     if (!url) return false;
@@ -422,36 +419,20 @@ function updateSettingsUI() {
     document.getElementById('gsUrl').value = APP.googleSheetUrl;
     const statusEl = document.getElementById('connStatus');
     if (APP.googleSheetUrl) {
-        statusEl.innerHTML = '<span class="status-dot on"></span> URL tersimpan (tes koneksi dengan tombol)';
+        statusEl.innerHTML = '<span class="status-dot on"></span> Mengecek koneksi...';
         testConnection().then(ok => {
             statusEl.innerHTML = ok
                 ? '<span class="status-dot on"></span> Terhubung ke Google Sheets ✅'
-                : '<span class="status-dot off"></span> URL ada tapi tidak terhubung ❌';
+                : '<span class="status-dot off"></span> Gagal terhubung ❌';
         });
     } else {
-        statusEl.innerHTML = '<span class="status-dot off"></span> Belum terhubung';
+        statusEl.innerHTML = '<span class="status-dot off"></span> URL tidak ditemukan';
     }
 }
 
 function saveSettings() {
-    const url = document.getElementById('gsUrl').value.trim();
-    APP.googleSheetUrl = url;
-    localStorage.setItem('gsUrl', url);
-    updateSettingsUI();
-    if (url) {
-        showToast('🔗 URL disimpan! Menguji koneksi...', 'success');
-        testConnection().then(ok => {
-            updateSettingsUI();
-            if (ok) {
-                showToast('✅ Koneksi ke Google Sheets BERHASIL!', 'success');
-                syncToSheets();
-            } else {
-                showToast('⚠️ URL tersimpan tapi koneksi gagal. Cek deployment.', 'error');
-            }
-        });
-    } else {
-        showToast('💾 URL dikosongkan. Data disimpan lokal.', 'success');
-    }
+    // Tidak digunakan karena URL di-hardcode, tapi dipertahankan untuk kompatibilitas
+    showToast('🔧 URL sudah dikunci di aplikasi.', 'success');
 }
 
 function exportToCSV() {
@@ -467,7 +448,7 @@ function exportToCSV() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'finansialku_export_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.download = 'tabungan_kita_export_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
     showToast('📥 Data diexport ke CSV!');
@@ -475,23 +456,12 @@ function exportToCSV() {
 
 // ==================== INIT ====================
 function init() {
-    // Gunakan URL hardcode jika ada, jika tidak, fallback ke localStorage (untuk development)
-    if (APP.googleSheetUrl) {
-        // Coba sinkronisasi dari Sheets, jika gagal, tetap gunakan localStorage
-        syncFromSheets().then(() => {
-            console.log('✅ Sinkronisasi awal berhasil');
-        }).catch(err => {
-            console.warn('⚠️ Gagal sinkronisasi awal, memakai data lokal');
-        });
-    } else {
-        // Tanpa Sheets, baca localStorage
-        const txData = localStorage.getItem('txData');
-        const goalData = localStorage.getItem('goalData');
-        if (txData) APP.transactions = JSON.parse(txData);
-        if (goalData) APP.goals = JSON.parse(goalData);
-    }
+    // Mulai dengan data dari localStorage dulu agar UI cepat
+    const txData = localStorage.getItem('txData');
+    const goalData = localStorage.getItem('goalData');
+    if (txData) APP.transactions = JSON.parse(txData);
+    if (goalData) APP.goals = JSON.parse(goalData);
 
-    // Setelah itu, inisialisasi UI (tetap dijalankan meskipun fetch belum selesai)
     document.getElementById('userSelect').value = APP.currentUser;
 
     const today = new Date().toISOString().split('T')[0];
@@ -507,7 +477,16 @@ function init() {
     refreshDashboard();
     updateSettingsUI();
 
-    console.log('🚀 Tabungan kita siap!');
+    // Sinkronisasi dari Sheets di background
+    if (APP.googleSheetUrl) {
+        syncFromSheets().then(() => {
+            console.log('✅ Sinkronisasi awal berhasil');
+        }).catch(err => {
+            console.warn('⚠️ Gagal sinkronisasi awal, memakai data lokal');
+        });
+    }
+
+    console.log('🚀 Tabungan Kita siap! (SUGIANTO & NOVIMUTIARA)');
 }
 
 document.addEventListener('DOMContentLoaded', init);
