@@ -3,7 +3,7 @@ const APP = {
     googleSheetUrl: 'https://script.google.com/macros/s/AKfycbyWRr90xGzGsNi8Xm26KZKy6dpAs4LzE6b084DdyId90rXg8LpXOwglipi2B3uL2VO1/exec', // GANTI DENGAN URL DEPLOYMENT KAMU
     transactions: JSON.parse(localStorage.getItem('txData') || '[]'),
     goals: JSON.parse(localStorage.getItem('goalData') || '[]'),
-    currentUser: localStorage.getItem('currentUser') || 'SUGIANTO',
+    currentUser: localStorage.getItem('currentUser') || 'Sugi',
     currentPage: 'dashboard',
 };
 
