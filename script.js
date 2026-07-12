@@ -491,7 +491,7 @@ function exportToCSV() {
 
 // ==================== INIT ====================
 function init() {
-    APP.googleSheetUrl = localStorage.getItem('gsUrl') || '';
+    APP.googleSheetUrl = 'https://script.google.com/macros/s/AKfycbyWRr90xGzGsNi8Xm26KZKy6dpAs4LzE6b084DdyId90rXg8LpXOwglipi2B3uL2VO1/exec';
     const txData = localStorage.getItem('txData');
     const goalData = localStorage.getItem('goalData');
     if (txData) APP.transactions = JSON.parse(txData);
