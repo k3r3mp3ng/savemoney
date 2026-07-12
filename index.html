@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💰 Tabungan</title>
+    <title>💰 Tabungan Kita - Multi User</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,16 +16,15 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">💰</div>
-            Tabungan
+            Tabungan Kita
         </div>
 
         <!-- USER SELECTOR -->
         <div class="user-selector">
             <label for="userSelect">👤 Pilih User</label>
             <select id="userSelect" onchange="switchUser()">
-                <option value="Sugi">SUGIANTO</option>
-                <option value="Novi">NOVI MUTIARA</option>
-                <!-- Bisa tambah user lain -->
+                <option value="SUGIANTO">SUGIANTO</option>
+                <option value="NOVIMUTIARA">NOVIMUTIARA</option>
             </select>
         </div>
 
@@ -43,7 +42,7 @@
                 <span class="nav-icon">⚙️</span> Pengaturan
             </a>
         </nav>
-        <div class="sidebar-footer">v2.0 • Tabungan</div>
+        <div class="sidebar-footer">v2.0 • Sinkronisasi Cloud</div>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -53,7 +52,7 @@
         <section class="page active" id="page-dashboard">
             <div class="page-header">
                 <h2>📊 Dashboard</h2>
-                <p>Ringkasan keuangan kita bulan ini</p>
+                <p>Ringkasan keuangan kamu bulan ini</p>
             </div>
             <div class="cards-grid" id="dashboardCards">
                 <div class="card balance-card">
@@ -221,22 +220,20 @@
             <div class="settings-card">
                 <h3 style="margin-bottom:8px;font-weight:700;">🔗 Google Sheets Web App URL</h3>
                 <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">
-                    Masukkan URL dari Google Apps Script Web App yang sudah di-deploy.
-                    <br>Status koneksi: <span id="connStatus"><span class="status-dot off"></span> Belum terhubung</span>
+                    URL sudah tertanam di aplikasi.<br>
+                    Status koneksi: <span id="connStatus"><span class="status-dot off"></span> Mengecek...</span>
                 </p>
-                <label>Web App URL</label>
-                <input type="url" id="gsUrl" placeholder="https://script.google.com/macros/s/AKfycbyWRr90xGzGsNi8Xm26KZKy6dpAs4LzE6b084DdyId90rXg8LpXOwglipi2B3uL2VO1/exec">
+                <label>Web App URL (terkunci)</label>
+                <input type="url" id="gsUrl" placeholder="https://script.google.com/macros/s/xxxxx/exec" readonly disabled>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <button class="btn btn-primary" onclick="saveSettings()">💾 Simpan & Tes Koneksi</button>
                     <button class="btn btn-outline btn-sm" onclick="syncFromSheets()">🔄 Sinkronisasi Sekarang</button>
                     <button class="btn btn-outline btn-sm" onclick="exportToCSV()">📥 Export CSV</button>
                 </div>
                 <div style="margin-top:18px;padding:14px;background:#fefce8;border-radius:10px;font-size:0.82rem;color:#92400e;line-height:1.7;">
-                    <strong>ℹ️ Cara setup Google Sheets:</strong><br>
-                    1. Buat Google Sheet baru dengan 2 sheet: <code>Transactions</code> dan <code>Goals</code><br>
-                    2. Buka <strong>Extensions → Apps Script</strong>, tempel kode dari dokumentasi<br>
-                    3. Deploy sebagai <strong>Web App</strong> (Execute as: Me, Access: Anyone)<br>
-                    4. Copy URL deployment dan tempel di sini
+                    <strong>ℹ️ Catatan:</strong><br>
+                    • Data disimpan otomatis ke Google Sheets.<br>
+                    • User <strong>SUGIANTO</strong> dan <strong>NOVIMUTIARA</strong> berbagi target tabungan.<br>
+                    • Transaksi masing-masing user terpisah.
                 </div>
             </div>
         </section>
