@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💰 FinansialKu - Personal Finance Tracker</title>
+    <title>💰 Tabungan</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,8 +16,19 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <div class="logo-icon">💰</div>
-            FinansialKu
+            Tabungan
         </div>
+
+        <!-- USER SELECTOR -->
+        <div class="user-selector">
+            <label for="userSelect">👤 Pilih User</label>
+            <select id="userSelect" onchange="switchUser()">
+                <option value="Andi">SUGIANTO</option>
+                <option value="Budi">NOVI MUTIARA</option>
+                <!-- Bisa tambah user lain -->
+            </select>
+        </div>
+
         <nav>
             <a class="active" data-page="dashboard" onclick="navigateTo('dashboard')">
                 <span class="nav-icon">📊</span> Dashboard
@@ -32,7 +43,7 @@
                 <span class="nav-icon">⚙️</span> Pengaturan
             </a>
         </nav>
-        <div class="sidebar-footer">v1.0 • Google Sheets Sync</div>
+        <div class="sidebar-footer">v2.0 • Tabungan</div>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -42,7 +53,7 @@
         <section class="page active" id="page-dashboard">
             <div class="page-header">
                 <h2>📊 Dashboard</h2>
-                <p>Ringkasan keuangan kamu bulan ini</p>
+                <p>Ringkasan keuangan kita bulan ini</p>
             </div>
             <div class="cards-grid" id="dashboardCards">
                 <div class="card balance-card">
@@ -70,7 +81,6 @@
                     <div class="card-sub" id="dashGoalSub">Belum ada target</div>
                 </div>
             </div>
-            <!-- Quick Chart -->
             <div class="card" style="padding:24px;">
                 <h3 style="margin-bottom:16px;">📈 Pemasukan vs Pengeluaran (6 Bulan Terakhir)</h3>
                 <div style="display:flex; gap:8px; align-items:flex-end; height:180px; padding-top:10px;" id="chartContainer">
@@ -85,7 +95,6 @@
                 <h2>💳 Transaksi</h2>
                 <p>Catat pemasukan & pengeluaran kamu</p>
             </div>
-            <!-- Add Transaction Form -->
             <div class="card" style="margin-bottom:20px;">
                 <h3 style="margin-bottom:14px;font-weight:700;">➕ Tambah Transaksi Baru</h3>
                 <div class="form-row">
@@ -127,7 +136,6 @@
                 </div>
                 <button class="btn btn-primary" onclick="addTransaction()">💾 Simpan Transaksi</button>
             </div>
-            <!-- Transaction List -->
             <div class="table-container">
                 <div class="table-header">
                     <h3>📋 Daftar Transaksi</h3>
