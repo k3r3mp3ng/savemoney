@@ -355,45 +355,55 @@ async function syncToSheets() {
             transactions: JSON.stringify(APP.transactions),
             goals: JSON.stringify(APP.goals),
         };
-        await fetch(url, {
+        // Jangan pakai no-cors agar bisa membaca response
+        const resp = await fetch(url, {
             method: 'POST',
-            mode: 'no-cors',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(payload).toString(),
         });
-        console.log('📤 Data synced to Google Sheets');
+        const result = await resp.json();
+        if (result.status === 'synced') {
+            console.log('📤 Data berhasil disimpan ke Sheets');
+        }
     } catch (e) {
-        console.warn('⚠️ Sync failed:', e.message);
+        console.warn('⚠️ Gagal sync ke Sheets:', e.message);
+        showToast('⚠️ Gagal menyimpan ke cloud, data hanya di lokal', 'error');
     }
 }
 
 async function syncFromSheets() {
     const url = APP.googleSheetUrl;
-    if (!url) return showToast('⚠️ Masukkan Google Sheets URL dulu di Pengaturan!', 'error');
-    showToast('🔄 Menarik data dari Google Sheets...', 'success');
+    if (!url) return showToast('⚠️ URL Sheets belum diatur!', 'error');
+    showToast('🔄 Mengambil data dari server...', 'success');
     try {
         const resp = await fetch(url + '?action=getAll', { method: 'GET' });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
-        if (data.transactions) {
+        console.log('📥 Data dari Sheets:', data);
+
+        // Pastikan data.transactions adalah array
+        if (Array.isArray(data.transactions)) {
             APP.transactions = data.transactions.map(t => ({
                 ...t,
                 user: t.user || 'SUGIANTO'  // fallback untuk data lama
             }));
         }
-        if (data.goals) APP.goals = data.goals;
+        if (Array.isArray(data.goals)) {
+            APP.goals = data.goals;
+        }
         saveLocal();
         populateFilterMonths();
         renderTransactions();
         renderGoals();
         refreshDashboard();
         updateSettingsUI();
-        showToast('✅ Data berhasil disinkronisasi dari Google Sheets!');
+        showToast('✅ Data berhasil dimuat dari server!');
     } catch (e) {
         console.error('Sync error:', e);
-        showToast('❌ Gagal sinkronisasi. Cek URL dan koneksi internet.', 'error');
+        showToast('❌ Gagal mengambil data. Cek koneksi & URL.', 'error');
     }
 }
+
 
 async function testConnection() {
     const url = APP.googleSheetUrl;
@@ -465,16 +475,23 @@ function exportToCSV() {
 
 // ==================== INIT ====================
 function init() {
-    // URL sudah di-hardcode di atas, langsung pakai
-    // APP.googleSheetUrl tidak perlu diambil dari localStorage lagi
-    // Kecuali kamu masih ingin fallback, bisa dipertahankan, tapi untuk hardcode biarkan seperti di atas.
+    // Gunakan URL hardcode jika ada, jika tidak, fallback ke localStorage (untuk development)
+    if (APP.googleSheetUrl) {
+        // Coba sinkronisasi dari Sheets, jika gagal, tetap gunakan localStorage
+        syncFromSheets().then(() => {
+            console.log('✅ Sinkronisasi awal berhasil');
+        }).catch(err => {
+            console.warn('⚠️ Gagal sinkronisasi awal, memakai data lokal');
+        });
+    } else {
+        // Tanpa Sheets, baca localStorage
+        const txData = localStorage.getItem('txData');
+        const goalData = localStorage.getItem('goalData');
+        if (txData) APP.transactions = JSON.parse(txData);
+        if (goalData) APP.goals = JSON.parse(goalData);
+    }
 
-    const txData = localStorage.getItem('txData');
-    const goalData = localStorage.getItem('goalData');
-    if (txData) APP.transactions = JSON.parse(txData);
-    if (goalData) APP.goals = JSON.parse(goalData);
-    // TIDAK ADA INISIALISASI SAMPLE DATA
-
+    // Setelah itu, inisialisasi UI (tetap dijalankan meskipun fetch belum selesai)
     document.getElementById('userSelect').value = APP.currentUser;
 
     const today = new Date().toISOString().split('T')[0];
@@ -490,11 +507,7 @@ function init() {
     refreshDashboard();
     updateSettingsUI();
 
-    if (APP.googleSheetUrl) {
-        syncFromSheets().catch(() => {});
-    }
-
-    console.log('🚀 FinansialKu Multi-User siap! (tanpa sample data)');
+    console.log('🚀 Tabungan kita siap!');
 }
 
 document.addEventListener('DOMContentLoaded', init);
