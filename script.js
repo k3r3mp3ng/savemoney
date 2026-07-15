@@ -109,18 +109,15 @@ function refreshDashboard() {
     const currentMonth = getCurrentMonth();
     const userTx = APP.transactions.filter(t => t.user === APP.currentUser);
     const monthTx = userTx.filter(t => t.date.startsWith(currentMonth));
-
     const totalIncomeMonth = monthTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
     const totalExpenseMonth = monthTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
-
-    // Saldo dihitung dari SEMUA transaksi user (bukan hanya bulan ini)
     const allIncome = userTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
     const allExpense = userTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
     const balance = allIncome - allExpense;
 
     document.getElementById('dashBalance').textContent = formatRupiah(balance);
-    document.getElementById('dashIncome').textContent = formatRupiah(totalIncomeMonth);
-    document.getElementById('dashExpense').textContent = formatRupiah(totalExpenseMonth);
+    document.getElementById('dashIncome').textContent = formatRupiah(totalIncomeMonth);   // <-- perbaikan
+    document.getElementById('dashExpense').textContent = formatRupiah(totalExpenseMonth); // <-- perbaikan
 
     const holidayGoal = APP.goals.find(g => g.name.toLowerCase().includes('libur') || g.name.toLowerCase().includes('holiday') || g.icon === '🏖️') || APP.goals[0];
     if (holidayGoal) {
