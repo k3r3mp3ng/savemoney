@@ -116,8 +116,8 @@ function refreshDashboard() {
     const balance = allIncome - allExpense;
 
     document.getElementById('dashBalance').textContent = formatRupiah(balance);
-    document.getElementById('dashIncome').textContent = formatRupiah(totalIncomeMonth);   // <-- perbaikan
-    document.getElementById('dashExpense').textContent = formatRupiah(totalExpenseMonth); // <-- perbaikan
+    document.getElementById('dashIncome').textContent = formatRupiah(totalIncomeMonth);
+    document.getElementById('dashExpense').textContent = formatRupiah(totalExpenseMonth);
 
     const holidayGoal = APP.goals.find(g => g.name.toLowerCase().includes('libur') || g.name.toLowerCase().includes('holiday') || g.icon === '🏖️') || APP.goals[0];
     if (holidayGoal) {
@@ -326,29 +326,27 @@ function addGoalFunds(goalId) {
 
     const wasIncomplete = goal.current < goal.target;
     
-    // Tambahkan dana ke goal
+    // Tambah dana ke goal
     goal.current += amount;
     
     // Buat transaksi pengeluaran otomatis
     const tx = {
         id: generateId(),
-        date: new Date().toISOString().split('T')[0], // hari ini
+        date: new Date().toISOString().split('T')[0],
         type: 'Expense',
         category: 'Tabungan',
         amount: amount,
         desc: `Alokasi ke ${goal.name}`,
         user: APP.currentUser
     };
-    APP.transactions.push(tx);  // langsung masukkan
+    APP.transactions.push(tx);
     
     // Reset input
     input.value = '';
     
-    // Simpan & sinkronisasi
+    // Simpan & perbarui tampilan
     saveLocal();
     syncToSheets();
-    
-    // Perbarui SEMUA tampilan
     populateFilterMonths();
     renderTransactions();
     renderGoals();
