@@ -17,6 +17,17 @@ function generateId() {
     return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 }
 
+// Fungsi khusus untuk menambah transaksi secara internal (tanpa reset form)
+function addTransactionInternal(tx) {
+    APP.transactions.push(tx);
+    saveLocal();
+    syncToSheets();
+    // Refresh tampilan terkait
+    populateFilterMonths();
+    renderTransactions();
+    refreshDashboard();
+}
+
 // ==================== USER SWITCH ====================
 function switchUser() {
     const select = document.getElementById('userSelect');
@@ -321,17 +332,33 @@ function addGoalFunds(goalId) {
     const goal = APP.goals.find(g => g.id === goalId);
     if (!goal) return;
     const wasIncomplete = goal.current < goal.target;
+    
+    // Tambah dana ke goal
     goal.current += amount;
     input.value = '';
+    
+    // Buat transaksi pengeluaran otomatis untuk user aktif
+    const tx = {
+        id: generateId(),
+        date: new Date().toISOString().split('T')[0],
+        type: 'Expense',
+        category: 'Tabungan',
+        amount: amount,
+        desc: `Tambahan dana ke ${goal.name}`,
+        user: APP.currentUser
+    };
+    addTransactionInternal(tx);
+    
+    // Simpan goal & sync
     saveLocal();
     syncToSheets();
     renderGoals();
-    refreshDashboard();
+    // refreshDashboard sudah dipanggil di addTransactionInternal
     if (wasIncomplete && goal.current >= goal.target) {
         showToast('🎉🎉 Target TERCAPAI! Selamat! 🎉🎉');
         triggerConfetti();
     } else {
-        showToast(`✅ Dana ditambahkan ke "${goal.name}"! (oleh ${APP.currentUser})`);
+        showToast(`✅ Dana ditambahkan ke "${goal.name}"! (oleh ${APP.currentUser}), saldo berkurang Rp ${formatRupiah(amount)}`);
     }
 }
 
