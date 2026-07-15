@@ -17,16 +17,6 @@ function generateId() {
     return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 }
 
-// Fungsi internal untuk menambah transaksi tanpa mereset form
-function addTransactionInternal(tx) {
-    APP.transactions.push(tx);
-    saveLocal();          // simpan ke localStorage
-    syncToSheets();       // kirim ke Google Sheets
-    populateFilterMonths();
-    renderTransactions();
-    refreshDashboard();   // update dashboard & saldo
-}
-
 // ==================== USER SWITCH ====================
 function switchUser() {
     const select = document.getElementById('userSelect');
@@ -115,27 +105,22 @@ function getCurrentMonth() {
 }
 
 // ==================== DASHBOARD ====================
-/*function refreshDashboard() {
-    const currentMonth = getCurrentMonth();
-    const userTx = APP.transactions.filter(t => t.user === APP.currentUser);
-    const monthTx = userTx.filter(t => t.date.startsWith(currentMonth));
-    const totalIncome = monthTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
-    const totalExpense = monthTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
-    const allIncome = userTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
-    const allExpense = userTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
-    const balance = allIncome - allExpense;*/
 function refreshDashboard() {
     const currentMonth = getCurrentMonth();
     const userTx = APP.transactions.filter(t => t.user === APP.currentUser);
-    
-    // Hitung total pemasukan dan pengeluaran (semua waktu)
+    const monthTx = userTx.filter(t => t.date.startsWith(currentMonth));
+
+    const totalIncomeMonth = monthTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
+    const totalExpenseMonth = monthTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
+
+    // Saldo dihitung dari SEMUA transaksi user (bukan hanya bulan ini)
     const allIncome = userTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
     const allExpense = userTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
     const balance = allIncome - allExpense;
 
     document.getElementById('dashBalance').textContent = formatRupiah(balance);
-    document.getElementById('dashIncome').textContent = formatRupiah(totalIncome);
-    document.getElementById('dashExpense').textContent = formatRupiah(totalExpense);
+    document.getElementById('dashIncome').textContent = formatRupiah(totalIncomeMonth);
+    document.getElementById('dashExpense').textContent = formatRupiah(totalExpenseMonth);
 
     const holidayGoal = APP.goals.find(g => g.name.toLowerCase().includes('libur') || g.name.toLowerCase().includes('holiday') || g.icon === '🏖️') || APP.goals[0];
     if (holidayGoal) {
@@ -305,7 +290,7 @@ function renderGoals() {
             <p style="font-size:0.8rem;color:#64748b;margin-top:4px;">Sisa: ${formatRupiah(remaining)}</p>
             <div class="goal-actions">
                 <input type="number" id="addAmount_${g.id}" placeholder="Tambah dana (Rp)" min="0">
-                <button class="btn btn-primary btn-sm" onclick="('${g.id}')">➕ Tambah</button>
+                <button class="btn btn-primary btn-sm" onclick="addGoalFunds('${g.id}')">➕ Tambah</button>
                 <button class="btn btn-danger btn-xs" onclick="deleteGoal('${g.id}')">🗑️</button>
             </div>
         </div>`;
@@ -335,10 +320,13 @@ function addGoal() {
 function addGoalFunds(goalId) {
     const input = document.getElementById('addAmount_' + goalId);
     const amount = parseFloat(input?.value);
-    if (!amount || amount <= 0) return showToast('⚠️ Masukkan jumlah dana!', 'error');
+    if (!amount || amount <= 0) {
+        showToast('⚠️ Masukkan jumlah dana!', 'error');
+        return;
+    }
     const goal = APP.goals.find(g => g.id === goalId);
     if (!goal) return;
-    
+
     const wasIncomplete = goal.current < goal.target;
     
     // Tambahkan dana ke goal
@@ -354,22 +342,20 @@ function addGoalFunds(goalId) {
         desc: `Alokasi ke ${goal.name}`,
         user: APP.currentUser
     };
+    APP.transactions.push(tx);  // langsung masukkan
     
-    // Masukkan transaksi
-    APP.transactions.push(tx);
-    
-    // Kosongkan input
+    // Reset input
     input.value = '';
     
-    // Simpan semua perubahan
+    // Simpan & sinkronisasi
     saveLocal();
     syncToSheets();
     
-    // Perbarui tampilan
+    // Perbarui SEMUA tampilan
     populateFilterMonths();
     renderTransactions();
     renderGoals();
-    refreshDashboard();  // ini yang akan mengurangi saldo
+    refreshDashboard();
     
     if (wasIncomplete && goal.current >= goal.target) {
         showToast('🎉🎉 Target TERCAPAI! Selamat! 🎉🎉');
@@ -427,7 +413,7 @@ async function syncFromSheets() {
         if (Array.isArray(data.transactions)) {
             APP.transactions = data.transactions.map(t => ({
                 ...t,
-                user: t.user || 'SUGIANTO'  // fallback
+                user: t.user || 'SUGIANTO'
             }));
         }
         if (Array.isArray(data.goals)) {
@@ -475,7 +461,6 @@ function updateSettingsUI() {
 }
 
 function saveSettings() {
-    // Tidak digunakan karena URL di-hardcode, tapi dipertahankan untuk kompatibilitas
     showToast('🔧 URL sudah dikunci di aplikasi.', 'success');
 }
 
@@ -500,7 +485,6 @@ function exportToCSV() {
 
 // ==================== INIT ====================
 function init() {
-    // Mulai dengan data dari localStorage dulu agar UI cepat
     const txData = localStorage.getItem('txData');
     const goalData = localStorage.getItem('goalData');
     if (txData) APP.transactions = JSON.parse(txData);
@@ -521,7 +505,6 @@ function init() {
     refreshDashboard();
     updateSettingsUI();
 
-    // Sinkronisasi dari Sheets di background
     if (APP.googleSheetUrl) {
         syncFromSheets().then(() => {
             console.log('✅ Sinkronisasi awal berhasil');
