@@ -109,8 +109,10 @@ function refreshDashboard() {
     const currentMonth = getCurrentMonth();
     const userTx = APP.transactions.filter(t => t.user === APP.currentUser);
     const monthTx = userTx.filter(t => t.date.startsWith(currentMonth));
+
     const totalIncomeMonth = monthTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
     const totalExpenseMonth = monthTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
+
     const allIncome = userTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
     const allExpense = userTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
     const balance = allIncome - allExpense;
