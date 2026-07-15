@@ -17,15 +17,14 @@ function generateId() {
     return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 }
 
-// Fungsi khusus untuk menambah transaksi secara internal (tanpa reset form)
+// Fungsi internal untuk menambah transaksi tanpa mereset form
 function addTransactionInternal(tx) {
     APP.transactions.push(tx);
-    saveLocal();
-    syncToSheets();
-    // Refresh tampilan terkait
+    saveLocal();          // simpan ke localStorage
+    syncToSheets();       // kirim ke Google Sheets
     populateFilterMonths();
     renderTransactions();
-    refreshDashboard();
+    refreshDashboard();   // update dashboard & saldo
 }
 
 // ==================== USER SWITCH ====================
@@ -116,12 +115,20 @@ function getCurrentMonth() {
 }
 
 // ==================== DASHBOARD ====================
-function refreshDashboard() {
+/*function refreshDashboard() {
     const currentMonth = getCurrentMonth();
     const userTx = APP.transactions.filter(t => t.user === APP.currentUser);
     const monthTx = userTx.filter(t => t.date.startsWith(currentMonth));
     const totalIncome = monthTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
     const totalExpense = monthTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
+    const allIncome = userTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
+    const allExpense = userTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
+    const balance = allIncome - allExpense;*/
+function refreshDashboard() {
+    const currentMonth = getCurrentMonth();
+    const userTx = APP.transactions.filter(t => t.user === APP.currentUser);
+    
+    // Hitung total pemasukan dan pengeluaran (semua waktu)
     const allIncome = userTx.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount), 0);
     const allExpense = userTx.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount), 0);
     const balance = allIncome - allExpense;
@@ -298,7 +305,7 @@ function renderGoals() {
             <p style="font-size:0.8rem;color:#64748b;margin-top:4px;">Sisa: ${formatRupiah(remaining)}</p>
             <div class="goal-actions">
                 <input type="number" id="addAmount_${g.id}" placeholder="Tambah dana (Rp)" min="0">
-                <button class="btn btn-primary btn-sm" onclick="addGoalFunds('${g.id}')">➕ Tambah</button>
+                <button class="btn btn-primary btn-sm" onclick="('${g.id}')">➕ Tambah</button>
                 <button class="btn btn-danger btn-xs" onclick="deleteGoal('${g.id}')">🗑️</button>
             </div>
         </div>`;
@@ -331,34 +338,44 @@ function addGoalFunds(goalId) {
     if (!amount || amount <= 0) return showToast('⚠️ Masukkan jumlah dana!', 'error');
     const goal = APP.goals.find(g => g.id === goalId);
     if (!goal) return;
+    
     const wasIncomplete = goal.current < goal.target;
     
-    // Tambah dana ke goal
+    // Tambahkan dana ke goal
     goal.current += amount;
-    input.value = '';
     
-    // Buat transaksi pengeluaran otomatis untuk user aktif
+    // Buat transaksi pengeluaran otomatis
     const tx = {
         id: generateId(),
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0], // hari ini
         type: 'Expense',
         category: 'Tabungan',
         amount: amount,
-        desc: `Tambahan dana ke ${goal.name}`,
+        desc: `Alokasi ke ${goal.name}`,
         user: APP.currentUser
     };
-    addTransactionInternal(tx);
     
-    // Simpan goal & sync
+    // Masukkan transaksi
+    APP.transactions.push(tx);
+    
+    // Kosongkan input
+    input.value = '';
+    
+    // Simpan semua perubahan
     saveLocal();
     syncToSheets();
+    
+    // Perbarui tampilan
+    populateFilterMonths();
+    renderTransactions();
     renderGoals();
-    // refreshDashboard sudah dipanggil di addTransactionInternal
+    refreshDashboard();  // ini yang akan mengurangi saldo
+    
     if (wasIncomplete && goal.current >= goal.target) {
         showToast('🎉🎉 Target TERCAPAI! Selamat! 🎉🎉');
         triggerConfetti();
     } else {
-        showToast(`✅ Dana ditambahkan ke "${goal.name}"! (oleh ${APP.currentUser}), saldo berkurang Rp ${formatRupiah(amount)}`);
+        showToast(`✅ Dana ditambahkan ke "${goal.name}"! Saldo ${APP.currentUser} berkurang Rp ${formatRupiah(amount)}`);
     }
 }
 
